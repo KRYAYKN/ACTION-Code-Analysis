@@ -1,0 +1,35 @@
+name: "AL Code Analysis"
+description: "Runs CodeCop, UICop, and PerTenantExtensionCop analysis on AL code"
+inputs:
+  project-path:
+    description: "Path to the AL project"
+    required: true
+  package-cache-path:
+    description: "Path to the AL package cache"
+    required: true
+  output-path:
+    description: "Path for the compiled output"
+    required: true
+  ruleset-path:
+    description: "Path to the AL ruleset"
+    required: false
+    default: "${{ inputs.project-path }}/.alcop/ruleset.json"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run Code Analysis
+      shell: pwsh
+      run: |
+        . "${{ github.action_path }}/src/script.ps1" `
+          -ProjectPath "${{ inputs.project-path }}" `
+          -PackageCachePath "${{ inputs.package-cache-path }}" `
+          -OutputPath "${{ inputs.output-path }}" `
+          -RulesetPath "${{ inputs.ruleset-path }}"
+
+    - name: Upload Code Analysis Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-analysis-results
+        path: "${{ inputs.output-path }}"
+        retention-days: 30

@@ -7,13 +7,15 @@ param (
 
 Write-Host "🔍 Searching for AL.exe..."
 
-$AlPath = Get-Command al.exe -ErrorAction SilentlyContinue
-if ($null -eq $AlPath) {
-    Write-Host "❌ Error: al.exe not found! Make sure AL Language extension is installed."
+# PATH'de AL.exe'yi ara
+$alExePath = Join-Path -Path $env:ALPATH -ChildPath "al.exe"
+
+if (-not (Test-Path $alExePath)) {
+    Write-Host "❌ Error: al.exe not found at path: $alExePath"
     exit 1
 }
 
-Write-Host "✅ AL.exe found at: $($AlPath.Source)"
+Write-Host "✅ AL.exe found at: $alExePath"
 
 if ([string]::IsNullOrWhiteSpace($RulesetPath)) {
     $RulesetPath = Join-Path $ProjectPath ".alcop\ruleset.json"
@@ -21,7 +23,7 @@ if ([string]::IsNullOrWhiteSpace($RulesetPath)) {
 }
 
 Write-Host "🚀 Running AL Code Analysis..."
-& $AlPath.Source `
+& $alExePath `
     /project:"$ProjectPath" `
     /packagecachepath:"$PackageCachePath" `
     /out:"$OutputPath" `

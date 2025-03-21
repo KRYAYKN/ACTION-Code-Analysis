@@ -23,7 +23,7 @@ runs:
       shell: pwsh
       run: |
         $ProgressPreference = 'SilentlyContinue'
-        
+    
         $body = @{
           filters = @(
             @{
@@ -34,33 +34,36 @@ runs:
           )
           flags = 0x1F
         } | ConvertTo-Json -Depth 10
-        
+    
         $headers = @{
-          "Accept" = "application/json;api-version=3.0-preview.1"
-          "Content-Type" = "application/json"
+         "Accept" = "application/json;api-version=3.0-preview.1"
+         "Content-Type" = "application/json"
         }
-        
+    
         $response = Invoke-RestMethod `
           -Method Post `
           -Uri "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery" `
           -Headers $headers `
           -Body $body
-        
+    
         $vsixUrl = $response.results[0].extensions[0].versions[0].files `
           | Where-Object { $_.assetType -eq "Microsoft.VisualStudio.Services.VSIXPackage" } `
           | Select-Object -ExpandProperty source
-        
+    
         Write-Host "⬇️ Downloading AL Language extension from: $vsixUrl"
-        
+    
         $vsixPath = "$env:RUNNER_TEMP\al_language.vsix"
         $extractPath = "$env:RUNNER_TEMP\al"
-        
+    
         Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath
         Expand-Archive -Path $vsixPath -DestinationPath $extractPath -Force
-        
+    
         $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin"
-        echo "$alPath" >> $env:GITHUB_PATH
         Write-Host "✅ AL Language extension extracted to: $alPath"
+    
+        # PATH'e AL dizinini ekle ve script'e geçir
+        $env:PATH = "$alPath;$env:PATH"
+        echo "ALPATH=$alPath" >> $env:GITHUB_ENV
 
     - name: Run Code Analysis
       shell: pwsh

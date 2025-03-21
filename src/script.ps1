@@ -7,12 +7,21 @@ param (
 
 Write-Host "🔍 Searching for AL.exe..."
 
-# PATH'de AL.exe'yi ara
-$alExePath = Join-Path -Path $env:ALPATH -ChildPath "al.exe"
-
-if (-not (Test-Path $alExePath)) {
-    Write-Host "❌ Error: al.exe not found at path: $alExePath"
-    exit 1
+# ALPATH çevre değişkenini kontrol et
+if ([string]::IsNullOrWhiteSpace($env:ALPATH) -or -not (Test-Path "$env:ALPATH\al.exe")) {
+    # PATH'de al.exe'yi ara
+    $AlPath = Get-Command al.exe -ErrorAction SilentlyContinue
+    
+    if ($null -eq $AlPath) {
+        Write-Host "❌ Error: al.exe not found! Make sure AL Language extension is installed."
+        Write-Host "ALPATH: $env:ALPATH"
+        Write-Host "PATH: $env:PATH"
+        exit 1
+    }
+    
+    $alExePath = $AlPath.Source
+} else {
+    $alExePath = Join-Path -Path $env:ALPATH -ChildPath "al.exe"
 }
 
 Write-Host "✅ AL.exe found at: $alExePath"

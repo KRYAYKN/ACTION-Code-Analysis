@@ -58,13 +58,22 @@ runs:
         Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath
         Expand-Archive -Path $vsixPath -DestinationPath $extractPath -Force
     
-        $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin"
-        Write-Host "✅ AL Language extension extracted to: $alPath"
+        Write-Host "🔍 Looking for al.exe in the extracted package..."
+        $alExe = Get-ChildItem -Path $extractPath -Recurse -Filter "al.exe" | Select-Object -First 1
+    
+        if ($null -eq $alExe) {
+        Write-Host "❌ Error: al.exe not found in the extracted package!"
+        Get-ChildItem -Path $extractPath -Recurse | Select-Object FullName | Format-Table -AutoSize
+        exit 1
+        }
+    
+        $alPath = $alExe.DirectoryName
+        Write-Host "✅ AL.exe found at: $($alExe.FullName)"
     
         # PATH'e AL dizinini ekle ve script'e geçir
         $env:PATH = "$alPath;$env:PATH"
         echo "ALPATH=$alPath" >> $env:GITHUB_ENV
-
+        
     - name: Run Code Analysis
       shell: pwsh
       run: |

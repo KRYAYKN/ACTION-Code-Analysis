@@ -13,7 +13,7 @@ inputs:
   ruleset-path:
     description: "Path to the AL ruleset"
     required: false
-    default: "${{ inputs.project-path }}/.alcop/ruleset.json"
+    default: ".alcop/ruleset.json"
 
 runs:
   using: "composite"

@@ -5,33 +5,28 @@ param (
     [string]$RulesetPath
 )
 
-Write-Host "🔍 Searching for AL compiler (alc.exe)..."
+Write-Host "🔍 Searching for AL compiler..."
 
-# ALPATH ile belirlenen al.exe'yi kontrol et
-if (-not [string]::IsNullOrWhiteSpace($env:ALPATH)) {
-    $alcExePath = Join-Path -Path $env:ALPATH -ChildPath "alc.exe"
-    if (Test-Path $alcExePath) {
-        Write-Host "✅ alc.exe found at: $alcExePath"
-    } else {
-        Write-Host "❌ alc.exe not found in ALPATH!"
-        exit 1
-    }
-} else {
-    Write-Host "❌ ALPATH environment variable not set."
+$alcExePath = Join-Path -Path $env:ALPATH -ChildPath "alc.exe"
+
+if (-not (Test-Path $alcExePath)) {
+    Write-Host "❌ alc.exe not found at $alcExePath"
     exit 1
 }
+
+Write-Host "✅ alc.exe found at: $alcExePath"
 
 if ([string]::IsNullOrWhiteSpace($RulesetPath)) {
     $RulesetPath = Join-Path $ProjectPath ".alcop\ruleset.json"
     Write-Host "ℹ️ No ruleset provided. Using default: $RulesetPath"
 }
 
-Write-Host "🚀 Running AL Code Analysis..."
+Write-Host "🚀 Running AL Code Analysis with analyzers..."
 & $alcExePath `
     /project:"$ProjectPath" `
     /packagecachepath:"$PackageCachePath" `
     /out:"$OutputPath" `
-    /analyzers:CodeCop,UICop,PerTenantExtensionCop `
+    /analyzers:"$env:ALPATH\Analyzers\Microsoft.Dynamics.Nav.CodeCop.dll","$env:ALPATH\Analyzers\Microsoft.Dynamics.Nav.UICop.dll","$env:ALPATH\Analyzers\Microsoft.Dynamics.Nav.PerTenantExtensionCop.dll" `
     /rulesetpath:"$RulesetPath"
 
 if ($LASTEXITCODE -ne 0) {
@@ -39,4 +34,4 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-Write-Host "✅ AL Code Analysis Completed Successfully!"
+Write-Host "✅ AL Code Analysis completed successfully!"

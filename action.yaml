@@ -1,5 +1,6 @@
 name: "AL Code Analysis"
 description: "Runs CodeCop, UICop, and PerTenantExtensionCop analysis on AL code"
+
 inputs:
   project-path:
     description: "Path to the AL project"
@@ -18,6 +19,21 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Install AL Language Extension
+      shell: pwsh
+      run: |
+        $vsixUrl = "https://ms-dynamics-smb.gallerycdn.vsassets.io/extensions/ms-dynamics-smb/al/11.1.913972/1707813180141/Microsoft.Dynamics.Nav.Language.vsix"
+        $vsixPath = "$env:RUNNER_TEMP\al_language.vsix"
+        $extractPath = "$env:RUNNER_TEMP\al"
+
+        Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath
+        Expand-Archive -Path $vsixPath -DestinationPath $extractPath -Force
+
+        $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin"
+        Write-Host "✅ AL extension extracted to: $alPath"
+
+        echo "$alPath" >> $env:GITHUB_PATH
+
     - name: Run Code Analysis
       shell: pwsh
       run: |

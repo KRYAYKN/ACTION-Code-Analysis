@@ -25,13 +25,9 @@ runs:
         $ProgressPreference = 'SilentlyContinue'
 
         $body = @{
-          filters = @(
-            @{
-              criteria = @(
-                @{ filterType = 7; value = "ms-dynamics-smb.al" }
-              )
-            }
-          )
+          filters = @(@{
+            criteria = @(@{ filterType = 7; value = "ms-dynamics-smb.al" })
+          })
           flags = 0x1F
         } | ConvertTo-Json -Depth 10
 
@@ -40,20 +36,11 @@ runs:
           "Content-Type" = "application/json"
         }
 
-        $response = Invoke-RestMethod `
-          -Method Post `
-          -Uri "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery" `
-          -Headers $headers `
-          -Body $body
-
-        # ✅ En yeni sürümü al (ilk sıradaki)
+        $response = Invoke-RestMethod -Method Post -Uri "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery" -Headers $headers -Body $body
         $latestVersion = $response.results[0].extensions[0].versions[0]
-        $vsixUrl = $latestVersion.files `
-          | Where-Object { $_.assetType -eq "Microsoft.VisualStudio.Services.VSIXPackage" } `
-          | Select-Object -ExpandProperty source
+        $vsixUrl = $latestVersion.files | Where-Object { $_.assetType -eq "Microsoft.VisualStudio.Services.VSIXPackage" } | Select-Object -ExpandProperty source
 
         Write-Host "⬇️ Downloading AL Language extension from: $vsixUrl"
-
         $vsixPath = "$env:RUNNER_TEMP\al_language.vsix"
         $extractPath = "$env:RUNNER_TEMP\al"
 
@@ -63,7 +50,6 @@ runs:
         $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin"
         Write-Host "✅ AL Language extension extracted to: $alPath"
 
-        $env:PATH = "$alPath;$env:PATH"
         echo "ALPATH=$alPath" >> $env:GITHUB_ENV
 
     - name: Run Code Analysis

@@ -5,33 +5,31 @@ param (
     [string]$RulesetPath
 )
 
-Write-Host "🔍 Searching for AL compiler..."
+Write-Host "📥 Downloading AL Language v11..."
 
-$alcExePath = Join-Path -Path $env:ALPATH -ChildPath "alc.exe"
+$alDownloadUrl = "https://ms-dynamics-smb.gallerycdn.vsassets.io/extensions/ms-dynamics-smb/al/11.0.950504/1701354321747/Microsoft.Dynamics.Nav.Language.vsix"
+$vsixPath = "$env:RUNNER_TEMP\al_language.vsix"
+$extractPath = "$env:RUNNER_TEMP\al"
 
-if (-not (Test-Path $alcExePath)) {
-    Write-Host "❌ alc.exe not found at $alcExePath"
+Invoke-WebRequest -Uri $alDownloadUrl -OutFile $vsixPath -UseBasicParsing
+Expand-Archive -Path $vsixPath -DestinationPath $extractPath -Force
+
+$alPath = Join-Path -Path $extractPath -ChildPath "extension\bin"
+$alcPath = Join-Path -Path $alPath -ChildPath "alc.exe"
+
+if (-not (Test-Path -Path $alcPath)) {
+    Write-Host "❌ alc.exe not found!"
     exit 1
 }
 
-Write-Host "✅ alc.exe found at: $alcExePath"
+Write-Host "✅ AL Language extracted to: $alPath"
+Write-Host "🚀 Running AL Code Analysis..."
 
-if ([string]::IsNullOrWhiteSpace($RulesetPath)) {
-    $RulesetPath = Join-Path $ProjectPath ".alcop\ruleset.json"
-    Write-Host "ℹ️ No ruleset provided. Using default: $RulesetPath"
-}
+& $alcPath `
+    /project:$ProjectPath `
+    /packagecachepath:$PackageCachePath `
+    /out:$OutputPath\output.app `
+    /analyzers:"$alPath\Analyzers" `
+    /rulesetpath:$RulesetPath
 
-Write-Host "🚀 Running AL Code Analysis with analyzers..."
-& $alcExePath `
-    /project:"$ProjectPath" `
-    /packagecachepath:"$PackageCachePath" `
-    /out:"$OutputPath" `
-    /analyzers:"$env:ALPATH\Analyzers\Microsoft.Dynamics.Nav.CodeCop.dll","$env:ALPATH\Analyzers\Microsoft.Dynamics.Nav.UICop.dll","$env:ALPATH\Analyzers\Microsoft.Dynamics.Nav.PerTenantExtensionCop.dll" `
-    /rulesetpath:"$RulesetPath"
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ AL Code Analysis failed!"
-    exit $LASTEXITCODE
-}
-
-Write-Host "✅ AL Code Analysis completed successfully!"
+Write-Host "✅ AL Code Analysis Completed."

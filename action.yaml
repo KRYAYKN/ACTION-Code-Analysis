@@ -47,7 +47,7 @@ runs:
           -Headers $headers `
           -Body $body
 
-        # 🔄 En son sürümü al
+        # En son sürümü al
         $latestVersion = $response.results[0].extensions[0].versions[-1]
         $vsixUrl = $latestVersion.files `
           | Where-Object { $_.assetType -eq "Microsoft.VisualStudio.Services.VSIXPackage" } `
@@ -61,9 +61,13 @@ runs:
         Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath
         Expand-Archive -Path $vsixPath -DestinationPath $extractPath -Force
 
-        # win32 altındaki alc.exe'yi PATH'e ekle
-        $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin\win32"
+        # Doğru alPath (bin dizini)
+        $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin"
         Write-Host "✅ AL Language extension extracted to: $alPath"
+
+        # Doğrulama için
+        Write-Host "📋 Files in ALPATH directory:"
+        Get-ChildItem -Path $alPath -Filter "*.exe"
 
         $env:PATH = "$alPath;$env:PATH"
         echo "ALPATH=$alPath" >> $env:GITHUB_ENV

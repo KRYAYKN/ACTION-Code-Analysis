@@ -22,8 +22,7 @@ runs:
     - name: Download Latest AL Language Extension
       shell: pwsh
       run: |
-        # Download Latest AL Language Extension
-                $ProgressPreference = 'SilentlyContinue'
+        $ProgressPreference = 'SilentlyContinue'
 
         $body = @{
           filters = @(
@@ -47,8 +46,8 @@ runs:
           -Headers $headers `
           -Body $body
 
-        # En son sürümü al
-        $latestVersion = $response.results[0].extensions[0].versions[-1]
+        # ✅ En yeni sürümü al (ilk sıradaki)
+        $latestVersion = $response.results[0].extensions[0].versions[0]
         $vsixUrl = $latestVersion.files `
           | Where-Object { $_.assetType -eq "Microsoft.VisualStudio.Services.VSIXPackage" } `
           | Select-Object -ExpandProperty source
@@ -61,17 +60,11 @@ runs:
         Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath
         Expand-Archive -Path $vsixPath -DestinationPath $extractPath -Force
 
-        # Doğru alPath (bin dizini)
         $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin"
         Write-Host "✅ AL Language extension extracted to: $alPath"
 
-        # Doğrulama için
-        Write-Host "📋 Files in ALPATH directory:"
-        Get-ChildItem -Path $alPath -Filter "*.exe"
-
         $env:PATH = "$alPath;$env:PATH"
         echo "ALPATH=$alPath" >> $env:GITHUB_ENV
-
 
     - name: Run Code Analysis
       shell: pwsh

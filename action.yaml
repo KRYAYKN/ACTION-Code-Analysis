@@ -19,7 +19,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Download Latest AL Language Extension
+    - name: 🔽 Download Latest AL Language Extension
       shell: pwsh
       run: |
         $ProgressPreference = 'SilentlyContinue'
@@ -47,9 +47,9 @@ runs:
           -Body $body
 
         $latestVersion = $response.results[0].extensions[0].versions[0]
-        $vsixUrl = $latestVersion.files `
-          | Where-Object { $_.assetType -eq "Microsoft.VisualStudio.Services.VSIXPackage" } `
-          | Select-Object -ExpandProperty source
+        $vsixUrl = $latestVersion.files |
+          Where-Object { $_.assetType -eq "Microsoft.VisualStudio.Services.VSIXPackage" } |
+          Select-Object -ExpandProperty source
 
         Write-Host "⬇️ Downloading AL Language extension from: $vsixUrl"
 
@@ -59,18 +59,13 @@ runs:
         Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath
         Expand-Archive -Path $vsixPath -DestinationPath $extractPath -Force
 
-        # 🎯 Burada artık win32 alt klasörünü referans alıyoruz
         $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin\win32"
         Write-Host "✅ AL Language extension extracted to: $alPath"
 
-        # Kontrol için log
-        Write-Host "📋 Contents:"
-        Get-ChildItem -Path $alPath
-
         $env:PATH = "$alPath;$env:PATH"
-        echo "ALPATH=$alPath" >> $env:GITHUB_ENV 
+        echo "ALPATH=$alPath" >> $env:GITHUB_ENV
 
-    - name: Run Code Analysis
+    - name: 🧪 Run Code Analysis
       shell: pwsh
       run: |
         . "${{ github.action_path }}/src/script.ps1" `
@@ -79,7 +74,7 @@ runs:
           -OutputPath "${{ inputs.output-path }}" `
           -RulesetPath "${{ inputs.ruleset-path }}"
 
-    - name: Upload Code Analysis Results
+    - name: 📦 Upload Code Analysis Results
       uses: actions/upload-artifact@v4
       with:
         name: code-analysis-results

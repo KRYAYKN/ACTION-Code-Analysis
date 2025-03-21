@@ -1,5 +1,5 @@
 name: "AL Code Analysis"
-description: "Runs CodeCop, UICop, and PerTenantExtensionCop analysis on AL code"
+description: "Runs CodeCop, UICop, and PerTenantExtensionCop analysis on AL code using compatible AL Language version"
 
 inputs:
   project-path:
@@ -19,53 +19,21 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: 🔽 Download Latest AL Language Extension
+    - name: Download AL Language v11 Extension (Compatible with analyzers)
       shell: pwsh
       run: |
-        $ProgressPreference = 'SilentlyContinue'
-
-        $body = @{
-          filters = @(
-            @{
-              criteria = @(
-                @{ filterType = 7; value = "ms-dynamics-smb.al" }
-              )
-            }
-          )
-          flags = 0x1F
-        } | ConvertTo-Json -Depth 10
-
-        $headers = @{
-          "Accept" = "application/json;api-version=3.0-preview.1"
-          "Content-Type" = "application/json"
-        }
-
-        $response = Invoke-RestMethod `
-          -Method Post `
-          -Uri "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery" `
-          -Headers $headers `
-          -Body $body
-
-        $latestVersion = $response.results[0].extensions[0].versions[0]
-        $vsixUrl = $latestVersion.files |
-          Where-Object { $_.assetType -eq "Microsoft.VisualStudio.Services.VSIXPackage" } |
-          Select-Object -ExpandProperty source
-
-        Write-Host "⬇️ Downloading AL Language extension from: $vsixUrl"
-
+        $alDownloadUrl = "https://ms-dynamics-smb.gallerycdn.vsassets.io/extensions/ms-dynamics-smb/al/11.1.913972/1707813180141/Microsoft.Dynamics.Nav.Language.vsix"
         $vsixPath = "$env:RUNNER_TEMP\al_language.vsix"
         $extractPath = "$env:RUNNER_TEMP\al"
 
-        Invoke-WebRequest -Uri $vsixUrl -OutFile $vsixPath
+        Invoke-WebRequest -Uri $alDownloadUrl -OutFile $vsixPath
         Expand-Archive -Path $vsixPath -DestinationPath $extractPath -Force
 
-        $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin\win32"
-        Write-Host "✅ AL Language extension extracted to: $alPath"
-
-        $env:PATH = "$alPath;$env:PATH"
+        $alPath = Join-Path -Path $extractPath -ChildPath "extension\bin"
         echo "ALPATH=$alPath" >> $env:GITHUB_ENV
+        Write-Host "✅ AL extension extracted to: $alPath"
 
-    - name: 🧪 Run Code Analysis
+    - name: Run Code Analysis
       shell: pwsh
       run: |
         . "${{ github.action_path }}/src/script.ps1" `
@@ -74,7 +42,7 @@ runs:
           -OutputPath "${{ inputs.output-path }}" `
           -RulesetPath "${{ inputs.ruleset-path }}"
 
-    - name: 📦 Upload Code Analysis Results
+    - name: Upload Code Analysis Results
       uses: actions/upload-artifact@v4
       with:
         name: code-analysis-results

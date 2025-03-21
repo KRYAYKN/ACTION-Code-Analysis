@@ -7,29 +7,32 @@ param (
 
 Write-Host "🔍 Searching for AL compiler (alc.exe)..."
 
-$alcExe = Get-Command "alc.exe" -ErrorAction SilentlyContinue
-
-if (-not $alcExe) {
-    $alcFromPath = Join-Path $env:ALPATH "alc.exe"
-    if (Test-Path $alcFromPath) {
-        $alcExe = $alcFromPath
+# ALPATH ile belirlenen al.exe'yi kontrol et
+if (-not [string]::IsNullOrWhiteSpace($env:ALPATH)) {
+    $alcExePath = Join-Path -Path $env:ALPATH -ChildPath "alc.exe"
+    if (Test-Path $alcExePath) {
+        Write-Host "✅ alc.exe found at: $alcExePath"
     } else {
-        Write-Host "❌ alc.exe not found!"
-        Write-Host "ALPATH: $env:ALPATH"
+        Write-Host "❌ alc.exe not found in ALPATH!"
         exit 1
     }
+} else {
+    Write-Host "❌ ALPATH environment variable not set."
+    exit 1
 }
 
-Write-Host "✅ alc.exe found at: $($alcExe.Source ?? $alcExe)"
-
-# En son AL versiyonları analiz parametrelerini desteklemediği için sadece compile yapılır
-Write-Host "⚠️ Skipping /analyzers and /rulesetpath since they're no longer supported in latest AL Compiler."
+if ([string]::IsNullOrWhiteSpace($RulesetPath)) {
+    $RulesetPath = Join-Path $ProjectPath ".alcop\ruleset.json"
+    Write-Host "ℹ️ No ruleset provided. Using default: $RulesetPath"
+}
 
 Write-Host "🚀 Running AL Code Analysis..."
-& $alcExe `
+& $alcExePath `
     /project:"$ProjectPath" `
     /packagecachepath:"$PackageCachePath" `
-    /out:"$OutputPath"
+    /out:"$OutputPath" `
+    /analyzers:CodeCop,UICop,PerTenantExtensionCop `
+    /rulesetpath:"$RulesetPath"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ AL Code Analysis failed!"
